@@ -6,11 +6,13 @@
   <title>MarketWatch — Suivi Temps Réel</title>
   <script>
     (function() {
-      const theme = localStorage.getItem('marketwatch-theme') || 'dark';
+      let theme = 'dark';
+      try { theme = localStorage.getItem('marketwatch-theme') || 'dark'; } catch (e) {}
       document.documentElement.setAttribute('data-theme', theme);
       document.documentElement.style.colorScheme = theme;
     })();
   </script>
+  <meta name="color-scheme" content="dark light">
   <style>
     :root {
       --eau: #101815;
@@ -18,10 +20,14 @@
       --encre: #E6EDE9;
       --trace: #8AAE9E;
       --rule: #2C3B35;
+      --rule-bord: #688077;
       --carence: #E0715A;
       --pleine: #6BA3D6;
-      --signal-success: #34a853;
-      --signal-danger: #d33b27;
+      --focus: #6BA3D6;
+      --texte-secondaire: #9FB5AC;
+      --texte-faible: #5f6368;
+      --signal-success: #4ADE80;
+      --signal-danger: #FF7A66;
       --signal-warning: #fbbc04;
     }
 
@@ -30,10 +36,17 @@
         --eau: #E8EFEC;
         --sel: #F8FBF9;
         --encre: #12211C;
-        --trace: #5A8C7E;
+        --trace: #426B5D;
         --rule: #D4DFDB;
+        --rule-bord: #788B85;
         --carence: #C65A3D;
         --pleine: #4A7FBD;
+        --focus: #2563EB;
+        --texte-secondaire: #4A6B60;
+        --texte-faible: #666968;
+        --signal-success: #16743A;
+        --signal-danger: #B42318;
+        --signal-warning: #7A5600;
       }
     }
 
@@ -41,10 +54,17 @@
       --eau: #E8EFEC;
       --sel: #F8FBF9;
       --encre: #12211C;
-      --trace: #5A8C7E;
+      --trace: #426B5D;
       --rule: #D4DFDB;
+      --rule-bord: #788B85;
       --carence: #C65A3D;
       --pleine: #4A7FBD;
+      --focus: #2563EB;
+      --texte-secondaire: #4A6B60;
+      --texte-faible: #666968;
+      --signal-success: #16743A;
+      --signal-danger: #B42318;
+      --signal-warning: #7A5600;
     }
 
     * {
@@ -62,9 +82,45 @@
       transition: background 0.3s ease, color 0.3s ease;
     }
 
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+    }
+    .skip-link:focus {
+      left: 8px;
+      top: 8px;
+      z-index: 10;
+      padding: 8px 12px;
+      background: var(--sel);
+      color: var(--encre);
+      border-radius: 6px;
+    }
+
     @media (prefers-reduced-motion: reduce) {
-      body {
-        transition: none;
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+      .card:hover {
+        transform: none;
+      }
+      .theme-toggle:active {
+        transform: none;
       }
     }
 
@@ -107,7 +163,7 @@
 
     .update-time {
       font-size: 13px;
-      color: var(--rule);
+      color: var(--texte-secondaire);
     }
 
     .theme-toggle {
@@ -116,13 +172,14 @@
       gap: 8px;
       padding: 8px 12px;
       background: rgba(0, 0, 0, 0.2);
-      border: 1px solid var(--rule);
+      border: 1px solid var(--rule-bord);
       border-radius: 8px;
       cursor: pointer;
       transition: all 0.3s ease;
       width: 44px;
       height: 44px;
       justify-content: center;
+      type: button;
     }
 
     .theme-toggle:hover {
@@ -134,6 +191,21 @@
       transform: scale(0.95);
     }
 
+    .theme-toggle:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 3px;
+      border-radius: 6px;
+    }
+
+    .theme-toggle:focus {
+      outline: 3px solid var(--focus);
+      outline-offset: 3px;
+    }
+
+    .theme-toggle:focus:not(:focus-visible) {
+      outline: none;
+    }
+
     .theme-toggle svg {
       width: 20px;
       height: 20px;
@@ -142,6 +214,8 @@
       stroke-width: 2;
       stroke-linecap: round;
       stroke-linejoin: round;
+      aria-hidden: true;
+      focusable: false;
     }
 
     .grid {
@@ -153,12 +227,11 @@
 
     .card {
       background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--rule);
+      border: 1px solid var(--rule-bord);
       border-radius: 12px;
       padding: 25px;
       backdrop-filter: blur(10px);
       transition: all 0.3s ease;
-      cursor: pointer;
     }
 
     .card:hover {
@@ -198,7 +271,7 @@
 
     .card-subtitle {
       font-size: 11px;
-      color: var(--rule);
+      color: var(--texte-secondaire);
       margin-top: 2px;
     }
 
@@ -259,14 +332,14 @@
 
     .chart-data {
       font-size: 11px;
-      color: var(--rule);
+      color: var(--texte-secondaire);
       margin-top: 12px;
       line-height: 1.5;
     }
 
     .info-section {
       background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--rule);
+      border: 1px solid var(--rule-bord);
       border-radius: 12px;
       padding: 20px;
       margin-bottom: 30px;
@@ -296,7 +369,7 @@
     }
 
     .info-label {
-      color: var(--rule);
+      color: var(--texte-secondaire);
       margin-bottom: 4px;
     }
 
@@ -309,7 +382,7 @@
 
     .footer {
       text-align: center;
-      color: var(--rule);
+      color: var(--texte-secondaire);
       font-size: 12px;
       margin-top: 50px;
       padding: 20px;
@@ -376,14 +449,15 @@
   </style>
 </head>
 <body>
+  <a href="#contenu" class="skip-link">Aller au contenu principal</a>
   <div class="container">
     <header>
       <div class="header-content">
-        <div class="logo">📈 MarketWatch</div>
+        <h1 class="logo">📈 MarketWatch</h1>
         <div class="subtitle">Suivi temps réel des cours mondiaux</div>
         <div class="update-time">Mis à jour : <span id="time">--:--:--</span></div>
       </div>
-      <button class="theme-toggle" id="theme-toggle" aria-label="Basculer le thème">
+      <button class="theme-toggle" id="theme-toggle" aria-label="Basculer le thème" aria-pressed="false">
         <svg id="sun-icon" viewBox="0 0 24 24" style="display: none;">
           <circle cx="12" cy="12" r="5"></circle>
           <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -401,17 +475,19 @@
       </button>
     </header>
 
-    <div class="grid">
-      <div class="card" role="region" aria-label="Prix de l'or">
+    <p id="market-status" role="status" aria-live="polite" class="sr-only"></p>
+
+    <main id="contenu">
+      <section class="card" aria-labelledby="gold-title">
         <div class="card-header">
           <div class="card-icon">🏆</div>
           <div>
-            <div class="card-title">Or</div>
+            <h2 class="card-title" id="gold-title">Or</h2>
             <div class="card-subtitle">XAU/USD</div>
           </div>
         </div>
         <div class="price"><span id="gold-price">--</span><span class="currency">$</span></div>
-        <div class="change" id="gold-change" aria-live="polite">
+        <div class="change" id="gold-change">
           <span class="change-arrow">↗</span>
           <span>+0.00 (+0.00%)</span>
         </div>
@@ -419,18 +495,18 @@
         <div class="chart-data">
           Jour: <span id="gold-high">--</span> | Bas: <span id="gold-low">--</span>
         </div>
-      </div>
+      </section>
 
-      <div class="card" role="region" aria-label="CAC 40">
+      <section class="card" aria-labelledby="cac-title">
         <div class="card-header">
           <div class="card-icon">🇫🇷</div>
           <div>
-            <div class="card-title">CAC 40</div>
+            <h2 class="card-title" id="cac-title">CAC 40</h2>
             <div class="card-subtitle">Paris Bourse</div>
           </div>
         </div>
         <div class="price"><span id="cac-price">--</span></div>
-        <div class="change" id="cac-change" aria-live="polite">
+        <div class="change" id="cac-change">
           <span class="change-arrow">↗</span>
           <span>+0.00 (+0.00%)</span>
         </div>
@@ -438,18 +514,18 @@
         <div class="chart-data">
           Jour: <span id="cac-high">--</span> | Bas: <span id="cac-low">--</span>
         </div>
-      </div>
+      </section>
 
-      <div class="card" role="region" aria-label="S&P 500">
+      <section class="card" aria-labelledby="sp500-title">
         <div class="card-header">
           <div class="card-icon">🇺🇸</div>
           <div>
-            <div class="card-title">S&P 500</div>
+            <h2 class="card-title" id="sp500-title">S&P 500</h2>
             <div class="card-subtitle">USA Indice</div>
           </div>
         </div>
         <div class="price"><span id="sp500-price">--</span></div>
-        <div class="change" id="sp500-change" aria-live="polite">
+        <div class="change" id="sp500-change">
           <span class="change-arrow">↗</span>
           <span>+0.00 (+0.00%)</span>
         </div>
@@ -457,18 +533,18 @@
         <div class="chart-data">
           Jour: <span id="sp500-high">--</span> | Bas: <span id="sp500-low">--</span>
         </div>
-      </div>
+      </section>
 
-      <div class="card" role="region" aria-label="DAX">
+      <section class="card" aria-labelledby="dax-title">
         <div class="card-header">
           <div class="card-icon">🇩🇪</div>
           <div>
-            <div class="card-title">DAX</div>
+            <h2 class="card-title" id="dax-title">DAX</h2>
             <div class="card-subtitle">Germany Indice</div>
           </div>
         </div>
         <div class="price"><span id="dax-price">--</span></div>
-        <div class="change" id="dax-change" aria-live="polite">
+        <div class="change" id="dax-change">
           <span class="change-arrow">↗</span>
           <span>+0.00 (+0.00%)</span>
         </div>
@@ -476,18 +552,18 @@
         <div class="chart-data">
           Jour: <span id="dax-high">--</span> | Bas: <span id="dax-low">--</span>
         </div>
-      </div>
+      </section>
 
-      <div class="card" role="region" aria-label="Pétrole WTI">
+      <section class="card" aria-labelledby="wti-title">
         <div class="card-header">
           <div class="card-icon">🛢️</div>
           <div>
-            <div class="card-title">Pétrole WTI</div>
+            <h2 class="card-title" id="wti-title">Pétrole WTI</h2>
             <div class="card-subtitle">CRUDE OIL</div>
           </div>
         </div>
         <div class="price"><span id="wti-price">--</span><span class="currency">$</span></div>
-        <div class="change" id="wti-change" aria-live="polite">
+        <div class="change" id="wti-change">
           <span class="change-arrow">↗</span>
           <span>+0.00 (+0.00%)</span>
         </div>
@@ -495,18 +571,18 @@
         <div class="chart-data">
           Jour: <span id="wti-high">--</span> | Bas: <span id="wti-low">--</span>
         </div>
-      </div>
+      </section>
 
-      <div class="card" role="region" aria-label="Pétrole Brent">
+      <section class="card" aria-labelledby="brent-title">
         <div class="card-header">
           <div class="card-icon">⛽</div>
           <div>
-            <div class="card-title">Pétrole Brent</div>
+            <h2 class="card-title" id="brent-title">Pétrole Brent</h2>
             <div class="card-subtitle">BRENT OIL</div>
           </div>
         </div>
         <div class="price"><span id="brent-price">--</span><span class="currency">$</span></div>
-        <div class="change" id="brent-change" aria-live="polite">
+        <div class="change" id="brent-change">
           <span class="change-arrow">↗</span>
           <span>+0.00 (+0.00%)</span>
         </div>
@@ -514,11 +590,11 @@
         <div class="chart-data">
           Jour: <span id="brent-high">--</span> | Bas: <span id="brent-low">--</span>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
 
-    <div class="info-section">
-      <div class="info-title">📊 Données de marché</div>
+    <section class="info-section" aria-labelledby="market-data-title">
+      <h2 id="market-data-title">📊 Données de marché</h2>
       <div class="info-grid">
         <div class="info-item">
           <div class="info-label">Volatilité Or</div>
@@ -537,26 +613,54 @@
           <div class="info-value" id="eur-usd">--</div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="footer">
+    <footer class="footer">
       💡 Les données sont mises à jour en temps réel. Utilisé à titre informatif. Consultez un conseiller financier avant toute décision d'investissement.
-    </div>
+    </footer>
   </div>
 
   <script>
     const mockData = {
-      gold: { price: 2047.50, change: +18.75, high: 2052.00, low: 2035.00 },
-      cac: { price: 7642, change: +125, high: 7680, low: 7510 },
-      sp500: { price: 5903, change: +87, high: 5920, low: 5810 },
-      dax: { price: 18245, change: +245, high: 18310, low: 18090 },
-      wti: { price: 78.45, change: +1.25, high: 79.50, low: 76.80 },
-      brent: { price: 82.35, change: +0.85, high: 83.20, low: 80.90 }
+      gold: { price: 2047.50, previousClose: 2028.75, high: 2052.00, low: 2035.00 },
+      cac: { price: 7642, previousClose: 7517, high: 7680, low: 7510 },
+      sp500: { price: 5903, previousClose: 5816, high: 5920, low: 5810 },
+      dax: { price: 18245, previousClose: 18000, high: 18310, low: 18090 },
+      wti: { price: 78.45, previousClose: 77.20, high: 79.50, low: 76.80 },
+      brent: { price: 82.35, previousClose: 81.50, high: 83.20, low: 80.90 }
+    };
+
+    const volatility = {
+      gold: 0.003, cac: 0.004, sp500: 0.005, dax: 0.004, wti: 0.008, brent: 0.008
+    };
+
+    const bounds = {
+      gold: { min: 2000, max: 2100 }, cac: { min: 7300, max: 7900 },
+      sp500: { min: 5600, max: 6200 }, dax: { min: 17500, max: 19000 },
+      wti: { min: 70, max: 90 }, brent: { min: 75, max: 95 }
     };
 
     const themeToggle = document.getElementById('theme-toggle');
     const sunIcon = document.getElementById('sun-icon');
     const moonIcon = document.getElementById('moon-icon');
+    const statusEl = document.getElementById('market-status');
+    const timeEl = document.getElementById('time');
+
+    const nodes = {
+      gold: { price: document.getElementById('gold-price'), change: document.getElementById('gold-change'), high: document.getElementById('gold-high'), low: document.getElementById('gold-low') },
+      cac: { price: document.getElementById('cac-price'), change: document.getElementById('cac-change'), high: document.getElementById('cac-high'), low: document.getElementById('cac-low') },
+      sp500: { price: document.getElementById('sp500-price'), change: document.getElementById('sp500-change'), high: document.getElementById('sp500-high'), low: document.getElementById('sp500-low') },
+      dax: { price: document.getElementById('dax-price'), change: document.getElementById('dax-change'), high: document.getElementById('dax-high'), low: document.getElementById('dax-low') },
+      wti: { price: document.getElementById('wti-price'), change: document.getElementById('wti-change'), high: document.getElementById('wti-high'), low: document.getElementById('wti-low') },
+      brent: { price: document.getElementById('brent-price'), change: document.getElementById('brent-change'), high: document.getElementById('brent-high'), low: document.getElementById('brent-low') }
+    };
+
+    const volNodes = {
+      gold: document.getElementById('gold-vol'),
+      sp500: document.getElementById('sp500-vol'),
+      oil: document.getElementById('oil-spread'),
+      eur: document.getElementById('eur-usd')
+    };
 
     function updateThemeIcons() {
       const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -569,18 +673,21 @@
       const next = current === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', next);
       document.documentElement.style.colorScheme = next;
-      localStorage.setItem('marketwatch-theme', next);
+      themeToggle.setAttribute('aria-pressed', next === 'light' ? 'true' : 'false');
+      try { localStorage.setItem('marketwatch-theme', next); } catch (e) {}
       updateThemeIcons();
     });
 
     updateThemeIcons();
+    const isDarkOnLoad = document.documentElement.getAttribute('data-theme') === 'dark';
+    themeToggle.setAttribute('aria-pressed', isDarkOnLoad ? 'false' : 'true');
 
     function updateTime() {
       const now = new Date();
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
-      document.getElementById('time').textContent = `${hours}:${minutes}:${seconds}`;
+      timeEl.textContent = `${hours}:${minutes}:${seconds}`;
     }
 
     function formatNumber(num, decimals = 2) {
@@ -588,32 +695,33 @@
     }
 
     function updateCard(id, data) {
-      const price = data.price;
-      const change = data.change;
-      const changePercent = (change / price * 100).toFixed(2);
+      const change = data.price - data.previousClose;
+      const changePercent = (change / data.previousClose * 100).toFixed(2);
       const isPositive = change >= 0;
+      const node = nodes[id];
 
-      const priceEl = document.getElementById(`${id}-price`);
-      const changeEl = document.getElementById(`${id}-change`);
-      const highEl = document.getElementById(`${id}-high`);
-      const lowEl = document.getElementById(`${id}-low`);
-
-      if (priceEl) priceEl.textContent = formatNumber(price, 2);
-      if (changeEl) {
-        changeEl.className = `change ${isPositive ? 'up' : 'down'}`;
-        changeEl.innerHTML = `
-          <span class="change-arrow">${isPositive ? '↗' : '↘'}</span>
-          <span>${isPositive ? '+' : ''}${formatNumber(change, 2)} (${isPositive ? '+' : ''}${changePercent}%)</span>
-        `;
+      if (node.price) node.price.textContent = formatNumber(data.price, 2);
+      if (node.change) {
+        node.change.className = `change ${isPositive ? 'up' : 'down'}`;
+        const arrow = isPositive ? '↗' : '↘';
+        const sign = isPositive ? '+' : '';
+        node.change.innerHTML = `<span class="change-arrow">${arrow}</span><span>${sign}${formatNumber(change, 2)} (${sign}${changePercent}%)</span>`;
       }
-      if (highEl) highEl.textContent = formatNumber(data.high, 2);
-      if (lowEl) lowEl.textContent = formatNumber(data.low, 2);
+      if (node.high) node.high.textContent = formatNumber(data.high, 2);
+      if (node.low) node.low.textContent = formatNumber(data.low, 2);
     }
 
     function updateAllData() {
       Object.keys(mockData).forEach(key => {
-        const variation = (Math.random() - 0.5) * 2;
-        mockData[key].change += variation;
+        const data = mockData[key];
+        const vol = volatility[key];
+        const bound = bounds[key];
+        const drift = 0.0001;
+        const randomWalk = (Math.random() - 0.5) * 2 * vol;
+        const newPrice = data.price * (1 + drift + randomWalk);
+        data.price = Math.max(bound.min, Math.min(bound.max, newPrice));
+        if (data.price > data.high) data.high = data.price;
+        if (data.price < data.low) data.low = data.price;
       });
 
       updateCard('gold', mockData.gold);
@@ -623,10 +731,12 @@
       updateCard('wti', mockData.wti);
       updateCard('brent', mockData.brent);
 
-      document.getElementById('gold-vol').textContent = (Math.random() * 30).toFixed(2) + '%';
-      document.getElementById('sp500-vol').textContent = formatNumber(Math.random() * 4e9);
-      document.getElementById('oil-spread').textContent = formatNumber(mockData.brent.price - mockData.wti.price, 2);
-      document.getElementById('eur-usd').textContent = (0.92 + Math.random() * 0.02).toFixed(4);
+      if (volNodes.gold) volNodes.gold.textContent = (Math.random() * 30).toFixed(2) + '%';
+      if (volNodes.sp500) volNodes.sp500.textContent = formatNumber(Math.random() * 4e9);
+      if (volNodes.oil) volNodes.oil.textContent = formatNumber(mockData.brent.price - mockData.wti.price, 2);
+      if (volNodes.eur) volNodes.eur.textContent = (0.92 + Math.random() * 0.02).toFixed(4);
+
+      if (statusEl) statusEl.textContent = `Marché mis à jour: ${new Date().toLocaleTimeString('fr-FR')}`;
     }
 
     updateTime();
