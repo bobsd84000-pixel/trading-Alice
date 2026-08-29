@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MarketWatch — Suivi Temps Réel</title>
+  <script>
+    (function() {
+      const theme = localStorage.getItem('marketwatch-theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.style.colorScheme = theme;
+    })();
+  </script>
+  <style>
+    :root {
+      --eau: #101815;
+      --sel: #182420;
+      --encre: #E6EDE9;
+      --trace: #8AAE9E;
+      --rule: #2C3B35;
+      --carence: #E0715A;
+      --pleine: #6BA3D6;
+      --signal-success: #34a853;
+      --signal-danger: #d33b27;
+      --signal-warning: #fbbc04;
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) {
+        --eau: #E8EFEC;
+        --sel: #F8FBF9;
+        --encre: #12211C;
+        --trace: #5A8C7E;
+        --rule: #D4DFDB;
+        --carence: #C65A3D;
+        --pleine: #4A7FBD;
+      }
+    }
+
+    :root[data-theme="light"] {
+      --eau: #E8EFEC;
+      --sel: #F8FBF9;
+      --encre: #12211C;
+      --trace: #5A8C7E;
+      --rule: #D4DFDB;
+      --carence: #C65A3D;
+      --pleine: #4A7FBD;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: linear-gradient(135deg, var(--eau) 0%, var(--sel) 100%);
+      color: var(--encre);
+      min-height: 100vh;
+      padding: 20px;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      body {
+        transition: none;
+      }
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-align: center;
+      margin-bottom: 50px;
+      padding: 40px 20px;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .header-content {
+      flex: 1;
+      min-width: 250px;
+    }
+
+    .logo {
+      font-size: 48px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--pleine), var(--signal-success));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      font-size: 18px;
+      color: var(--trace);
+      margin-bottom: 10px;
+    }
+
+    .update-time {
+      font-size: 13px;
+      color: var(--rule);
+    }
+
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      width: 44px;
+      height: 44px;
+      justify-content: center;
+    }
+
+    .theme-toggle:hover {
+      background: rgba(0, 0, 0, 0.3);
+      border-color: var(--trace);
+    }
+
+    .theme-toggle:active {
+      transform: scale(0.95);
+    }
+
+    .theme-toggle svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--encre);
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--rule);
+      border-radius: 12px;
+      padding: 25px;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .card:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--trace);
+      transform: translateY(-4px);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .card {
+        transition: none;
+      }
+      .card:hover {
+        transform: none;
+      }
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      gap: 12px;
+    }
+
+    .card-icon {
+      font-size: 32px;
+      flex-shrink: 0;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--trace);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .card-subtitle {
+      font-size: 11px;
+      color: var(--rule);
+      margin-top: 2px;
+    }
+
+    .price {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      font-variant-numeric: tabular-nums;
+      color: var(--encre);
+    }
+
+    .currency {
+      font-size: 18px;
+      color: var(--trace);
+      margin-left: 4px;
+    }
+
+    .change {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      margin-bottom: 12px;
+    }
+
+    .change.up {
+      color: var(--signal-success);
+    }
+
+    .change.down {
+      color: var(--signal-danger);
+    }
+
+    .change-arrow {
+      font-size: 20px;
+    }
+
+    .chart {
+      height: 60px;
+      margin-top: 15px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-line {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 100%;
+      background: linear-gradient(to right, transparent, var(--signal-success), transparent);
+      opacity: 0.3;
+    }
+
+    .chart-data {
+      font-size: 11px;
+      color: var(--rule);
+      margin-top: 12px;
+      line-height: 1.5;
+    }
+
+    .info-section {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--rule);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 30px;
+      backdrop-filter: blur(10px);
+    }
+
+    .info-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--trace);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+    }
+
+    .info-item {
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 6px;
+      font-size: 12px;
+    }
+
+    .info-label {
+      color: var(--rule);
+      margin-bottom: 4px;
+    }
+
+    .info-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--encre);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .footer {
+      text-align: center;
+      color: var(--rule);
+      font-size: 12px;
+      margin-top: 50px;
+      padding: 20px;
+      border-top: 1px solid var(--rule);
+    }
+
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .header-content {
+        text-align: center;
+      }
+
+      .theme-toggle {
+        align-self: center;
+      }
+
+      .logo {
+        font-size: 36px;
+      }
+
+      header {
+        padding: 20px 10px;
+        margin-bottom: 30px;
+      }
+
+      .price {
+        font-size: 28px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 12px;
+      }
+
+      header {
+        padding: 16px 8px;
+      }
+
+      .logo {
+        font-size: 28px;
+      }
+
+      .price {
+        font-size: 24px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-content">
+        <div class="logo">📈 MarketWatch</div>
+        <div class="subtitle">Suivi temps réel des cours mondiaux</div>
+        <div class="update-time">Mis à jour : <span id="time">--:--:--</span></div>
+      </div>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Basculer le thème">
+        <svg id="sun-icon" viewBox="0 0 24 24" style="display: none;">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg id="moon-icon" viewBox="0 0 24 24">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+    </header>
+
+    <div class="grid">
+      <div class="card" role="region" aria-label="Prix de l'or">
+        <div class="card-header">
+          <div class="card-icon">🏆</div>
+          <div>
+            <div class="card-title">Or</div>
+            <div class="card-subtitle">XAU/USD</div>
+          </div>
+        </div>
+        <div class="price"><span id="gold-price">--</span><span class="currency">$</span></div>
+        <div class="change" id="gold-change" aria-live="polite">
+          <span class="change-arrow">↗</span>
+          <span>+0.00 (+0.00%)</span>
+        </div>
+        <div class="chart"><div class="chart-line"></div></div>
+        <div class="chart-data">
+          Jour: <span id="gold-high">--</span> | Bas: <span id="gold-low">--</span>
+        </div>
+      </div>
+
+      <div class="card" role="region" aria-label="CAC 40">
+        <div class="card-header">
+          <div class="card-icon">🇫🇷</div>
+          <div>
+            <div class="card-title">CAC 40</div>
+            <div class="card-subtitle">Paris Bourse</div>
+          </div>
+        </div>
+        <div class="price"><span id="cac-price">--</span></div>
+        <div class="change" id="cac-change" aria-live="polite">
+          <span class="change-arrow">↗</span>
+          <span>+0.00 (+0.00%)</span>
+        </div>
+        <div class="chart"><div class="chart-line"></div></div>
+        <div class="chart-data">
+          Jour: <span id="cac-high">--</span> | Bas: <span id="cac-low">--</span>
+        </div>
+      </div>
+
+      <div class="card" role="region" aria-label="S&P 500">
+        <div class="card-header">
+          <div class="card-icon">🇺🇸</div>
+          <div>
+            <div class="card-title">S&P 500</div>
+            <div class="card-subtitle">USA Indice</div>
+          </div>
+        </div>
+        <div class="price"><span id="sp500-price">--</span></div>
+        <div class="change" id="sp500-change" aria-live="polite">
+          <span class="change-arrow">↗</span>
+          <span>+0.00 (+0.00%)</span>
+        </div>
+        <div class="chart"><div class="chart-line"></div></div>
+        <div class="chart-data">
+          Jour: <span id="sp500-high">--</span> | Bas: <span id="sp500-low">--</span>
+        </div>
+      </div>
+
+      <div class="card" role="region" aria-label="DAX">
+        <div class="card-header">
+          <div class="card-icon">🇩🇪</div>
+          <div>
+            <div class="card-title">DAX</div>
+            <div class="card-subtitle">Germany Indice</div>
+          </div>
+        </div>
+        <div class="price"><span id="dax-price">--</span></div>
+        <div class="change" id="dax-change" aria-live="polite">
+          <span class="change-arrow">↗</span>
+          <span>+0.00 (+0.00%)</span>
+        </div>
+        <div class="chart"><div class="chart-line"></div></div>
+        <div class="chart-data">
+          Jour: <span id="dax-high">--</span> | Bas: <span id="dax-low">--</span>
+        </div>
+      </div>
+
+      <div class="card" role="region" aria-label="Pétrole WTI">
+        <div class="card-header">
+          <div class="card-icon">🛢️</div>
+          <div>
+            <div class="card-title">Pétrole WTI</div>
+            <div class="card-subtitle">CRUDE OIL</div>
+          </div>
+        </div>
+        <div class="price"><span id="wti-price">--</span><span class="currency">$</span></div>
+        <div class="change" id="wti-change" aria-live="polite">
+          <span class="change-arrow">↗</span>
+          <span>+0.00 (+0.00%)</span>
+        </div>
+        <div class="chart"><div class="chart-line"></div></div>
+        <div class="chart-data">
+          Jour: <span id="wti-high">--</span> | Bas: <span id="wti-low">--</span>
+        </div>
+      </div>
+
+      <div class="card" role="region" aria-label="Pétrole Brent">
+        <div class="card-header">
+          <div class="card-icon">⛽</div>
+          <div>
+            <div class="card-title">Pétrole Brent</div>
+            <div class="card-subtitle">BRENT OIL</div>
+          </div>
+        </div>
+        <div class="price"><span id="brent-price">--</span><span class="currency">$</span></div>
+        <div class="change" id="brent-change" aria-live="polite">
+          <span class="change-arrow">↗</span>
+          <span>+0.00 (+0.00%)</span>
+        </div>
+        <div class="chart"><div class="chart-line"></div></div>
+        <div class="chart-data">
+          Jour: <span id="brent-high">--</span> | Bas: <span id="brent-low">--</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-section">
+      <div class="info-title">📊 Données de marché</div>
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-label">Volatilité Or</div>
+          <div class="info-value" id="gold-vol">--</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Volume S&P</div>
+          <div class="info-value" id="sp500-vol">--</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Pétrole Écart</div>
+          <div class="info-value" id="oil-spread">--</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">EUR/USD</div>
+          <div class="info-value" id="eur-usd">--</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      💡 Les données sont mises à jour en temps réel. Utilisé à titre informatif. Consultez un conseiller financier avant toute décision d'investissement.
+    </div>
+  </div>
+
+  <script>
+    const mockData = {
+      gold: { price: 2047.50, change: +18.75, high: 2052.00, low: 2035.00 },
+      cac: { price: 7642, change: +125, high: 7680, low: 7510 },
+      sp500: { price: 5903, change: +87, high: 5920, low: 5810 },
+      dax: { price: 18245, change: +245, high: 18310, low: 18090 },
+      wti: { price: 78.45, change: +1.25, high: 79.50, low: 76.80 },
+      brent: { price: 82.35, change: +0.85, high: 83.20, low: 80.90 }
+    };
+
+    const themeToggle = document.getElementById('theme-toggle');
+    const sunIcon = document.getElementById('sun-icon');
+    const moonIcon = document.getElementById('moon-icon');
+
+    function updateThemeIcons() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      sunIcon.style.display = isDark ? 'block' : 'none';
+      moonIcon.style.display = isDark ? 'none' : 'block';
+    }
+
+    themeToggle.addEventListener('click', function() {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      document.documentElement.style.colorScheme = next;
+      localStorage.setItem('marketwatch-theme', next);
+      updateThemeIcons();
+    });
+
+    updateThemeIcons();
+
+    function updateTime() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      document.getElementById('time').textContent = `${hours}:${minutes}:${seconds}`;
+    }
+
+    function formatNumber(num, decimals = 2) {
+      return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function updateCard(id, data) {
+      const price = data.price;
+      const change = data.change;
+      const changePercent = (change / price * 100).toFixed(2);
+      const isPositive = change >= 0;
+
+      const priceEl = document.getElementById(`${id}-price`);
+      const changeEl = document.getElementById(`${id}-change`);
+      const highEl = document.getElementById(`${id}-high`);
+      const lowEl = document.getElementById(`${id}-low`);
+
+      if (priceEl) priceEl.textContent = formatNumber(price, 2);
+      if (changeEl) {
+        changeEl.className = `change ${isPositive ? 'up' : 'down'}`;
+        changeEl.innerHTML = `
+          <span class="change-arrow">${isPositive ? '↗' : '↘'}</span>
+          <span>${isPositive ? '+' : ''}${formatNumber(change, 2)} (${isPositive ? '+' : ''}${changePercent}%)</span>
+        `;
+      }
+      if (highEl) highEl.textContent = formatNumber(data.high, 2);
+      if (lowEl) lowEl.textContent = formatNumber(data.low, 2);
+    }
+
+    function updateAllData() {
+      Object.keys(mockData).forEach(key => {
+        const variation = (Math.random() - 0.5) * 2;
+        mockData[key].change += variation;
+      });
+
+      updateCard('gold', mockData.gold);
+      updateCard('cac', mockData.cac);
+      updateCard('sp500', mockData.sp500);
+      updateCard('dax', mockData.dax);
+      updateCard('wti', mockData.wti);
+      updateCard('brent', mockData.brent);
+
+      document.getElementById('gold-vol').textContent = (Math.random() * 30).toFixed(2) + '%';
+      document.getElementById('sp500-vol').textContent = formatNumber(Math.random() * 4e9);
+      document.getElementById('oil-spread').textContent = formatNumber(mockData.brent.price - mockData.wti.price, 2);
+      document.getElementById('eur-usd').textContent = (0.92 + Math.random() * 0.02).toFixed(4);
+    }
+
+    updateTime();
+    updateAllData();
+
+    setInterval(updateTime, 1000);
+    setInterval(updateAllData, 3000);
+  </script>
+</body>
+</html>
