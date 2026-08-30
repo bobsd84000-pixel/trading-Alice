@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MarketWatch — Démonstration de suivi des marchés</title>
+  <script>
+    (function() {
+      let theme = 'dark';
+      try { theme = localStorage.getItem('marketwatch-theme') || 'dark'; } catch (e) {}
+      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.style.colorScheme = theme;
+    })();
+  </script>
+  <meta name="color-scheme" content="dark light">
+  <style>
+    :root {
+      --eau: #101815;
+      --sel: #182420;
+      --encre: #E6EDE9;
+      --trace: #8AAE9E;
+      --rule: #2C3B35;
+      --rule-bord: #688077;
+      --carence: #E0715A;
+      --pleine: #6BA3D6;
+      --focus: #6BA3D6;
+      --texte-secondaire: #9FB5AC;
+      --texte-faible: #5f6368;
+      --signal-success: #4ADE80;
+      --signal-danger: #FF7A66;
+      --signal-warning: #fbbc04;
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) {
+        --eau: #E8EFEC;
+        --sel: #F8FBF9;
+        --encre: #12211C;
+        --trace: #426B5D;
+        --rule: #D4DFDB;
+        --rule-bord: #788B85;
+        --carence: #C65A3D;
+        --pleine: #4A7FBD;
+        --focus: #2563EB;
+        --texte-secondaire: #4A6B60;
+        --texte-faible: #666968;
+        --signal-success: #16743A;
+        --signal-danger: #B42318;
+        --signal-warning: #7A5600;
+      }
+    }
+
+    :root[data-theme="light"] {
+      --eau: #E8EFEC;
+      --sel: #F8FBF9;
+      --encre: #12211C;
+      --trace: #426B5D;
+      --rule: #D4DFDB;
+      --rule-bord: #788B85;
+      --carence: #C65A3D;
+      --pleine: #4A7FBD;
+      --focus: #2563EB;
+      --texte-secondaire: #4A6B60;
+      --texte-faible: #666968;
+      --signal-success: #16743A;
+      --signal-danger: #B42318;
+      --signal-warning: #7A5600;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: linear-gradient(135deg, var(--eau) 0%, var(--sel) 100%);
+      color: var(--encre);
+      min-height: 100vh;
+      padding: 20px;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+    }
+    .skip-link:focus {
+      left: 8px;
+      top: 8px;
+      z-index: 10;
+      padding: 8px 12px;
+      background: var(--sel);
+      color: var(--encre);
+      border-radius: 6px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+      .card:hover {
+        transform: none;
+      }
+      .theme-toggle:active {
+        transform: none;
+      }
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-align: center;
+      margin-bottom: 50px;
+      padding: 40px 20px;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .header-content {
+      flex: 1;
+      min-width: 250px;
+    }
+
+    .logo {
+      font-size: 48px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--pleine), var(--signal-success));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      font-size: 18px;
+      color: var(--trace);
+      margin-bottom: 10px;
+    }
+
+    .demo-notice {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--signal-danger);
+      margin-bottom: 10px;
+    }
+
+    .update-time {
+      font-size: 13px;
+      color: var(--texte-secondaire);
+    }
+
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--rule-bord);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      width: 44px;
+      height: 44px;
+      justify-content: center;
+    }
+
+    .theme-toggle:hover {
+      background: rgba(0, 0, 0, 0.3);
+      border-color: var(--trace);
+    }
+
+    .theme-toggle:active {
+      transform: scale(0.95);
+    }
+
+    .theme-toggle:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 3px;
+      border-radius: 6px;
+    }
+
+    .theme-toggle:focus {
+      outline: 3px solid var(--focus);
+      outline-offset: 3px;
+    }
+
+    .theme-toggle:focus:not(:focus-visible) {
+      outline: none;
+    }
+
+    .theme-toggle svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--encre);
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--rule-bord);
+      border-radius: 12px;
+      padding: 25px;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--trace);
+      transform: translateY(-4px);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .card {
+        transition: none;
+      }
+      .card:hover {
+        transform: none;
+      }
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      gap: 12px;
+    }
+
+    .card-icon {
+      font-size: 32px;
+      flex-shrink: 0;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--trace);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .card-subtitle {
+      font-size: 11px;
+      color: var(--texte-secondaire);
+      margin-top: 2px;
+    }
+
+    .price {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      font-variant-numeric: tabular-nums;
+      color: var(--encre);
+    }
+
+    .currency {
+      font-size: 18px;
+      color: var(--trace);
+      margin-left: 4px;
+    }
+
+    .change {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      margin-bottom: 12px;
+    }
+
+    .change.up {
+      color: var(--signal-success);
+    }
+
+    .change.down {
+      color: var(--signal-danger);
+    }
+
+    .change-arrow {
+      font-size: 20px;
+    }
+
+    .chart {
+      height: 60px;
+      margin-top: 15px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-line {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 100%;
+      background: linear-gradient(to right, transparent, var(--signal-success), transparent);
+      opacity: 0.3;
+    }
+
+    .chart-data {
+      font-size: 11px;
+      color: var(--texte-secondaire);
+      margin-top: 12px;
+      line-height: 1.5;
+    }
+
+    .info-section {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--rule-bord);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 30px;
+      backdrop-filter: blur(10px);
+    }
+
+    .info-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--trace);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+    }
+
+    .info-item {
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 6px;
+      font-size: 12px;
+    }
+
+    .info-label {
+      color: var(--texte-secondaire);
+      margin-bottom: 4px;
+    }
+
+    .info-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--encre);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .footer {
+      text-align: center;
+      color: var(--texte-secondaire);
+      font-size: 12px;
+      margin-top: 50px;
+      padding: 20px;
+      border-top: 1px solid var(--rule);
+    }
+
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .header-content {
+        text-align: center;
+      }
+
+      .theme-toggle {
+        align-self: center;
+      }
+
+      .logo {
+        font-size: 36px;
+      }
+
+      header {
+        padding: 20px 10px;
+        margin-bottom: 30px;
+      }
+
+      .price {
+        font-size: 28px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 12px;
+      }
+
+      header {
+        padding: 16px 8px;
+      }
+
+      .logo {
+        font-size: 28px;
+      }
+
+      .price {
+        font-size: 24px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="#contenu" class="skip-link">Aller au contenu principal</a>
+  <div class="container">
+    <header>
+      <div class="header-content">
+        <h1 class="logo">📈 MarketWatch</h1>
+        <div class="subtitle">Démonstration de suivi des cours mondiaux</div>
+        <p class="demo-notice">⚠️ Données simulées à des fins de démonstration — ne reflètent aucun cours réel.</p>
+        <div class="update-time">Mis à jour : <span id="time">--:--:--</span></div>
+      </div>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Basculer le thème" aria-pressed="false">
+        <svg id="sun-icon" viewBox="0 0 24 24" style="display: none;" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg id="moon-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+    </header>
+
+    <p id="market-status" role="status" aria-live="polite" class="sr-only"></p>
+
+    <main id="contenu">
+      <section class="card" aria-labelledby="gold-title">
+        <div class="card-header">
+          <div class="card-icon">🏆</div>
+          <div>
+            <h2 class="card-title" id="gold-title">Or</h2>
+            <div class="card-subtitle">XAU/USD</div>
+          </div>
+        </div>
+        <div class="price"><span id="gold-price">--</span><span class="currency">$</span></div>
+        <div class="change" id="gold-change">
+          <span class="change-arrow">↗</span>
+          <span>+0.00 (+0.00%)</span>
+        </div>
+        <div class="chart"><div class="chart-line"></div></div>
+        <div class="chart-data">
+          Jour: <span id="gold-high">--</span> | Bas: <span id="gold-low">--</span>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="cac-title">
+        <div class="card-header">
+          <div class="card-icon">🇫🇷</div>
+          <div>
+            <h2 class="card-title" id="cac-title">CAC 40</h2>
+            <div class="card-subtitle">Paris Bourse</div>
+          </div>
+        </div>
+        <div class="price"><span id="cac-price">--</span></div>
+        <div class="change" id="cac-change">
+          <span class="change-arrow">↗</span>
+          <span>+0.00 (+0.00%)</span>
+        </div>
+        <div class="chart"><div class="chart-line"></div></div>
+        <div class="chart-data">
+          Jour: <span id="cac-high">--</span> | Bas: <span id="cac-low">--</span>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="sp500-title">
+        <div class="card-header">
+          <div class="card-icon">🇺🇸</div>
+          <div>
+            <h2 class="card-title" id="sp500-title">S&P 500</h2>
+            <div class="card-subtitle">USA Indice</div>
+          </div>
+        </div>
+        <div class="price"><span id="sp500-price">--</span></div>
+        <div class="change" id="sp500-change">
+          <span class="change-arrow">↗</span>
+          <span>+0.00 (+0.00%)</span>
+        </div>
+        <div class="chart"><div class="chart-line"></div></div>
+        <div class="chart-data">
+          Jour: <span id="sp500-high">--</span> | Bas: <span id="sp500-low">--</span>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="dax-title">
+        <div class="card-header">
+          <div class="card-icon">🇩🇪</div>
+          <div>
+            <h2 class="card-title" id="dax-title">DAX</h2>
+            <div class="card-subtitle">Germany Indice</div>
+          </div>
+        </div>
+        <div class="price"><span id="dax-price">--</span></div>
+        <div class="change" id="dax-change">
+          <span class="change-arrow">↗</span>
+          <span>+0.00 (+0.00%)</span>
+        </div>
+        <div class="chart"><div class="chart-line"></div></div>
+        <div class="chart-data">
+          Jour: <span id="dax-high">--</span> | Bas: <span id="dax-low">--</span>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="wti-title">
+        <div class="card-header">
+          <div class="card-icon">🛢️</div>
+          <div>
+            <h2 class="card-title" id="wti-title">Pétrole WTI</h2>
+            <div class="card-subtitle">CRUDE OIL</div>
+          </div>
+        </div>
+        <div class="price"><span id="wti-price">--</span><span class="currency">$</span></div>
+        <div class="change" id="wti-change">
+          <span class="change-arrow">↗</span>
+          <span>+0.00 (+0.00%)</span>
+        </div>
+        <div class="chart"><div class="chart-line"></div></div>
+        <div class="chart-data">
+          Jour: <span id="wti-high">--</span> | Bas: <span id="wti-low">--</span>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="brent-title">
+        <div class="card-header">
+          <div class="card-icon">⛽</div>
+          <div>
+            <h2 class="card-title" id="brent-title">Pétrole Brent</h2>
+            <div class="card-subtitle">BRENT OIL</div>
+          </div>
+        </div>
+        <div class="price"><span id="brent-price">--</span><span class="currency">$</span></div>
+        <div class="change" id="brent-change">
+          <span class="change-arrow">↗</span>
+          <span>+0.00 (+0.00%)</span>
+        </div>
+        <div class="chart"><div class="chart-line"></div></div>
+        <div class="chart-data">
+          Jour: <span id="brent-high">--</span> | Bas: <span id="brent-low">--</span>
+        </div>
+      </section>
+    </main>
+
+    <section class="info-section" aria-labelledby="market-data-title">
+      <h2 id="market-data-title">📊 Données de marché</h2>
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-label">Volatilité Or</div>
+          <div class="info-value" id="gold-vol">--</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Volume S&P</div>
+          <div class="info-value" id="sp500-vol">--</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Pétrole Écart</div>
+          <div class="info-value" id="oil-spread">--</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">EUR/USD</div>
+          <div class="info-value" id="eur-usd">--</div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      ⚠️ <strong>Données simulées.</strong> Les cours affichés sont générés aléatoirement à des fins de démonstration et ne correspondent à aucun marché réel. Ce produit ne constitue ni une source d'information financière ni un conseil en investissement. Consultez un conseiller financier avant toute décision.
+    </footer>
+  </div>
+
+  <script>
+    const mockData = {
+      gold: { price: 2047.50, previousClose: 2028.75, high: 2052.00, low: 2035.00 },
+      cac: { price: 7642, previousClose: 7517, high: 7680, low: 7510 },
+      sp500: { price: 5903, previousClose: 5816, high: 5920, low: 5810 },
+      dax: { price: 18245, previousClose: 18000, high: 18310, low: 18090 },
+      wti: { price: 78.45, previousClose: 77.20, high: 79.50, low: 76.80 },
+      brent: { price: 82.35, previousClose: 81.50, high: 83.20, low: 80.90 }
+    };
+
+    const volatility = {
+      gold: 0.003, cac: 0.004, sp500: 0.005, dax: 0.004, wti: 0.008, brent: 0.008
+    };
+
+    const bounds = {
+      gold: { min: 2000, max: 2100 }, cac: { min: 7300, max: 7900 },
+      sp500: { min: 5600, max: 6200 }, dax: { min: 17500, max: 19000 },
+      wti: { min: 70, max: 90 }, brent: { min: 75, max: 95 }
+    };
+
+    const themeToggle = document.getElementById('theme-toggle');
+    const sunIcon = document.getElementById('sun-icon');
+    const moonIcon = document.getElementById('moon-icon');
+    const statusEl = document.getElementById('market-status');
+    const timeEl = document.getElementById('time');
+
+    const nodes = {
+      gold: { price: document.getElementById('gold-price'), change: document.getElementById('gold-change'), high: document.getElementById('gold-high'), low: document.getElementById('gold-low') },
+      cac: { price: document.getElementById('cac-price'), change: document.getElementById('cac-change'), high: document.getElementById('cac-high'), low: document.getElementById('cac-low') },
+      sp500: { price: document.getElementById('sp500-price'), change: document.getElementById('sp500-change'), high: document.getElementById('sp500-high'), low: document.getElementById('sp500-low') },
+      dax: { price: document.getElementById('dax-price'), change: document.getElementById('dax-change'), high: document.getElementById('dax-high'), low: document.getElementById('dax-low') },
+      wti: { price: document.getElementById('wti-price'), change: document.getElementById('wti-change'), high: document.getElementById('wti-high'), low: document.getElementById('wti-low') },
+      brent: { price: document.getElementById('brent-price'), change: document.getElementById('brent-change'), high: document.getElementById('brent-high'), low: document.getElementById('brent-low') }
+    };
+
+    const volNodes = {
+      gold: document.getElementById('gold-vol'),
+      sp500: document.getElementById('sp500-vol'),
+      oil: document.getElementById('oil-spread'),
+      eur: document.getElementById('eur-usd')
+    };
+
+    function updateThemeIcons() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      sunIcon.style.display = isDark ? 'block' : 'none';
+      moonIcon.style.display = isDark ? 'none' : 'block';
+    }
+
+    themeToggle.addEventListener('click', function() {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      document.documentElement.style.colorScheme = next;
+      themeToggle.setAttribute('aria-pressed', next === 'light' ? 'true' : 'false');
+      try { localStorage.setItem('marketwatch-theme', next); } catch (e) {}
+      updateThemeIcons();
+    });
+
+    updateThemeIcons();
+    const isDarkOnLoad = document.documentElement.getAttribute('data-theme') === 'dark';
+    themeToggle.setAttribute('aria-pressed', isDarkOnLoad ? 'false' : 'true');
+
+    function updateTime() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      timeEl.textContent = `${hours}:${minutes}:${seconds}`;
+    }
+
+    function formatNumber(num, decimals = 2) {
+      return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function updateCard(id, data) {
+      const change = data.price - data.previousClose;
+      const changePercent = (change / data.previousClose * 100).toFixed(2);
+      const isPositive = change >= 0;
+      const node = nodes[id];
+
+      if (node.price) node.price.textContent = formatNumber(data.price, 2);
+      if (node.change) {
+        node.change.className = `change ${isPositive ? 'up' : 'down'}`;
+        const arrow = isPositive ? '↗' : '↘';
+        const sign = isPositive ? '+' : '';
+        node.change.innerHTML = `<span class="change-arrow">${arrow}</span><span>${sign}${formatNumber(change, 2)} (${sign}${changePercent}%)</span>`;
+      }
+      if (node.high) node.high.textContent = formatNumber(data.high, 2);
+      if (node.low) node.low.textContent = formatNumber(data.low, 2);
+    }
+
+    function updateAllData() {
+      Object.keys(mockData).forEach(key => {
+        const data = mockData[key];
+        const vol = volatility[key];
+        const bound = bounds[key];
+        const drift = 0.0001;
+        const randomWalk = (Math.random() - 0.5) * 2 * vol;
+        const newPrice = data.price * (1 + drift + randomWalk);
+        data.price = Math.max(bound.min, Math.min(bound.max, newPrice));
+        if (data.price > data.high) data.high = data.price;
+        if (data.price < data.low) data.low = data.price;
+      });
+
+      updateCard('gold', mockData.gold);
+      updateCard('cac', mockData.cac);
+      updateCard('sp500', mockData.sp500);
+      updateCard('dax', mockData.dax);
+      updateCard('wti', mockData.wti);
+      updateCard('brent', mockData.brent);
+
+      if (volNodes.gold) volNodes.gold.textContent = (Math.random() * 30).toFixed(2) + '%';
+      if (volNodes.sp500) volNodes.sp500.textContent = formatNumber(Math.random() * 4e9);
+      if (volNodes.oil) volNodes.oil.textContent = formatNumber(mockData.brent.price - mockData.wti.price, 2);
+      if (volNodes.eur) volNodes.eur.textContent = (0.92 + Math.random() * 0.02).toFixed(4);
+
+      if (statusEl) statusEl.textContent = `Marché mis à jour: ${new Date().toLocaleTimeString('fr-FR')}`;
+    }
+
+    updateTime();
+    updateAllData();
+
+    setInterval(updateTime, 1000);
+    setInterval(updateAllData, 3000);
+  </script>
+</body>
+</html>

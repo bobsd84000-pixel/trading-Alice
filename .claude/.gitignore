@@ -1,0 +1,6 @@
+# Réglages personnels (non partagés avec l'équipe)
+settings.local.json
+
+# Journaux de hooks : peuvent contenir des entrées d'outils sensibles
+hooks/logs/
+hooks/config/hooks-config.local.json

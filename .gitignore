@@ -1,0 +1,27 @@
+# Secrets — jamais commités (voir aussi permissions.deny dans .claude/settings.json)
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+dist/
+build/
+*.log
+
+# Divers
+.DS_Store
+.idea/
+.vscode/
